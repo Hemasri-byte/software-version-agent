@@ -1,0 +1,14 @@
+SOFTWARE VERSION SUMMARY
+========================
+Total software checked: 5
+Updates available: 4
+Up to date: 0
+Installed version not detected: 1
+Other results: 0
+
+Details:
+- Python: Update available
+- uv: Update available
+- Node.js: Update available
+- Git: Update available
+- Visual Studio Code: Could not detect installed version

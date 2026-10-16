@@ -1,0 +1,6 @@
+sno,name,current_version,latest_version,source_url,status,notes
+1,Python,3.13.14,3.15.0,https://www.python.org/downloads/,verified,Retrieved from a release source.
+2,uv,,0.13.1,https://github.com/astral-sh/uv/releases/tag/0.13.1,verified,Retrieved from a release source.
+3,Node.js,24.6.0,24.22.0,https://nodejs.org/en/download,verified,Retrieved from a release source.
+4,Git,,2.56.0.windows.2,https://github.com/git-for-windows/git/releases/tag/v2.56.0.windows.2,verified,Retrieved from a release source.
+5,Visual Studio Code,,1.142.0,https://github.com/microsoft/vscode/releases/tag/1.142.0,verified,Retrieved from a release source.

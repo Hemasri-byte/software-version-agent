@@ -1,0 +1,6 @@
+﻿sno,name,version,url
+1,Python,3.13.14,https://www.python.org/downloads/
+2,uv,,https://github.com/astral-sh/uv/releases
+3,Node.js,24.6.0,https://nodejs.org/en/download
+4,Git,,https://github.com/git-for-windows/git/releases
+5,Visual Studio Code,,https://code.visualstudio.com/updates
