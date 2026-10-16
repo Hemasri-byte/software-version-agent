@@ -28,7 +28,7 @@ def get_installed_version(name):
     }
 
     if name == "Visual Studio Code":
-        output = run_command(["code", "--version"])
+        output = run_command(["cmd", "/c", "code --version"])
         if output:
             return output.splitlines()[0].strip()
 

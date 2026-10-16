@@ -1,5 +1,4 @@
-﻿import csv
-import subprocess
+﻿import subprocess
 import sys
 from pathlib import Path
 
@@ -10,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent
 LATEST_FILE = BASE_DIR / "latest_versions.csv"
 COMPARISON_FILE = BASE_DIR / "version_comparison.csv"
 SUMMARY_FILE = BASE_DIR / "version_summary.txt"
+AUTHORS_FILE = BASE_DIR / "file_authors.csv"
 
 st.set_page_config(
     page_title="Software Version Agent",
@@ -18,7 +18,10 @@ st.set_page_config(
 )
 
 st.title("🖥️ Software Version Agent")
-st.caption("Check software releases, compare versions, and review update status.")
+st.caption(
+    "Check software releases, compare versions, and identify source-code authors."
+)
+
 
 def read_csv(path):
     if path.exists():
@@ -28,11 +31,13 @@ def read_csv(path):
             return pd.DataFrame()
     return pd.DataFrame()
 
-def run_script(script_name):
+
+def run_script(script_name, input_text=None):
     script_path = BASE_DIR / script_name
     result = subprocess.run(
         [sys.executable, str(script_path)],
         cwd=BASE_DIR,
+        input=input_text,
         capture_output=True,
         text=True,
         timeout=180,
@@ -42,40 +47,65 @@ def run_script(script_name):
         raise RuntimeError(message or f"{script_name} failed.")
     return result.stdout.strip()
 
+
 with st.sidebar:
     st.header("Controls")
-    st.write("Run the checker to refresh the reports.")
-    refresh = st.button("🔄 Check versions now", use_container_width=True)
+    st.write("Refresh the reports when required.")
+
+    refresh_versions = st.button(
+        "🔄 Check versions now", width="stretch"
+    )
+    refresh_authors = st.button(
+        "👤 Scan source-code authors", width="stretch"
+    )
 
     st.divider()
     st.write("**Project outputs**")
-    st.write("• latest_versions.csv")
-    st.write("• version_comparison.csv")
-    st.write("• version_summary.txt")
+    st.write("- latest_versions.csv")
+    st.write("- version_comparison.csv")
+    st.write("- version_summary.txt")
+    st.write("- file_authors.csv")
 
-if refresh:
+
+if refresh_versions:
     try:
-        with st.spinner("Checking official release sources..."):
-            output = run_script("main.py")
-            st.session_state["checker_output"] = output
+        with st.spinner("Checking release sources..."):
+            st.session_state["checker_output"] = run_script("main.py")
 
         with st.spinner("Comparing installed versions..."):
-            output = run_script("compare_versions.py")
-            st.session_state["comparison_output"] = output
+            st.session_state["comparison_output"] = run_script(
+                "compare_versions.py"
+            )
 
         st.success("Version check and comparison completed.")
     except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
-        st.error(f"Could not complete the check: {exc}")
+        st.error(f"Version check failed: {exc}")
+
+
+if refresh_authors:
+    try:
+        with st.spinner("Scanning source-code files..."):
+            st.session_state["author_output"] = run_script(
+                "author_finder.py",
+                input_text=str(BASE_DIR) + "\n",
+            )
+        st.success("Source-code author scan completed.")
+    except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
+        st.error(f"Author scan failed: {exc}")
+
 
 comparison = read_csv(COMPARISON_FILE)
 latest = read_csv(LATEST_FILE)
+authors = read_csv(AUTHORS_FILE)
 
 if not comparison.empty and "comparison_status" in comparison.columns:
     statuses = comparison["comparison_status"].astype(str)
     updates = int((statuses == "Update available").sum())
     current = int((statuses == "Up to date").sum())
     undetected = int(
-        statuses.str.contains("Could not detect installed version", regex=False).sum()
+        statuses.str.contains(
+            "Could not detect installed version", regex=False
+        ).sum()
     )
 
     col1, col2, col3, col4 = st.columns(4)
@@ -85,7 +115,7 @@ if not comparison.empty and "comparison_status" in comparison.columns:
     col4.metric("Not detected", undetected)
 
     st.subheader("Version comparison")
-    st.dataframe(comparison, use_container_width=True, hide_index=True)
+    st.dataframe(comparison, width="stretch", hide_index=True)
 
     st.download_button(
         "⬇️ Download comparison CSV",
@@ -94,11 +124,14 @@ if not comparison.empty and "comparison_status" in comparison.columns:
         mime="text/csv",
     )
 else:
-    st.info("No comparison report found yet. Click **Check versions now** in the sidebar.")
+    st.info(
+        "No comparison report found yet. Click Check versions now in the sidebar."
+    )
+
 
 if not latest.empty:
     st.subheader("Latest versions from release sources")
-    st.dataframe(latest, use_container_width=True, hide_index=True)
+    st.dataframe(latest, width="stretch", hide_index=True)
 
     st.download_button(
         "⬇️ Download latest versions CSV",
@@ -107,13 +140,51 @@ if not latest.empty:
         mime="text/csv",
     )
 
+
+st.subheader("Source Code Authors")
+st.caption(
+    "Author names are obtained from source-code comments or the latest "
+    "Git commit affecting each file. Git commit authors may differ from "
+    "the original file authors."
+)
+
+if not authors.empty:
+    st.dataframe(authors, width="stretch", hide_index=True)
+
+    st.download_button(
+        "⬇️ Download author report",
+        data=authors.to_csv(index=False).encode("utf-8"),
+        file_name="file_authors.csv",
+        mime="text/csv",
+    )
+else:
+    st.info(
+        "No author report found yet. Click Scan source-code authors in the sidebar."
+    )
+
+
 if SUMMARY_FILE.exists():
     st.subheader("Text summary")
     st.text(SUMMARY_FILE.read_text(encoding="utf-8"))
 
 with st.expander("Last run output"):
-    st.text(st.session_state.get("checker_output", "Checker has not run in this session."))
-    st.text(st.session_state.get("comparison_output", "Comparison has not run in this session."))
+    st.text(
+        st.session_state.get(
+            "checker_output", "Checker has not run in this session."
+        )
+    )
+    st.text(
+        st.session_state.get(
+            "comparison_output", "Comparison has not run in this session."
+        )
+    )
+    st.text(
+        st.session_state.get(
+            "author_output", "Author scan has not run in this session."
+        )
+    )
 
 st.divider()
-st.caption("Note: version results depend on the release sources configured in main.py.")
+st.caption(
+    "Version results depend on the release sources configured in main.py."
+)
