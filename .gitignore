@@ -5,3 +5,4 @@ __pycache__/
 file_authors.csv
 version_comparison.csv
 version_summary.txt
+reports/
